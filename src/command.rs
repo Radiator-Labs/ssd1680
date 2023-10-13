@@ -293,7 +293,7 @@ impl Command {
         };
 
         interface.send_command(command)?;
-        if data.len() == 0 {
+        if data.is_empty() {
             Ok(())
         } else {
             interface.send_data(data)
@@ -313,7 +313,7 @@ impl<'buf> BufCommand<'buf> {
         };
 
         interface.send_command(command)?;
-        if data.len() == 0 {
+        if data.is_empty() {
             Ok(())
         } else {
             interface.send_data(data)
