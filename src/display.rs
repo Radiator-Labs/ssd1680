@@ -82,7 +82,7 @@ where
         self.init()
     }
 
-    /// Initialise the controller according to Section 9: Typical Operating Sequence
+    /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
     fn init(&mut self) -> Result<(), I::Error> {
         Command::AnalogBlockControl(ANALOG_BLOCK_CONTROL_MAGIC).execute(&mut self.interface)?;

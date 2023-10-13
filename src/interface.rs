@@ -4,13 +4,13 @@ use hal;
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
 const RESET_DELAY_MS: u8 = 10;
 
-/// Trait implemented by displays to provide implemenation of core functionality.
+/// Trait implemented by displays to provide implementation of core functionality.
 pub trait DisplayInterface {
     type Error;
 
     /// Send a command to the controller.
     ///
-    /// Prefer calling `execute` on a [Commmand](../command/enum.Command.html) over calling this
+    /// Prefer calling `execute` on a [Command](../command/enum.Command.html) over calling this
     /// directly.
     fn send_command(&mut self, command: u8) -> Result<(), Self::Error>;
 
@@ -90,7 +90,7 @@ pub struct Interface<SPI, CS, BUSY, DC, RESET> {
     busy: BUSY,
     /// Data/Command Control Pin (High for data, Low for command) (output)
     dc: DC,
-    /// Pin for reseting the controller (output)
+    /// Pin for resetting the controller (output)
     reset: RESET,
 }
 

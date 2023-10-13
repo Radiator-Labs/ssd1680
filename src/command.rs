@@ -77,7 +77,7 @@ pub enum Command {
     GateScanStartPostion(u16),
     /// Set deep sleep mode
     DeepSleepMode(DeepSleepMode),
-    /// Set the data entry mode and increament axis
+    /// Set the data entry mode and increment axis
     DataEntryMode(DataEntryMode, IncrementAxis),
     /// Perform a soft reset, and reset all parameters to their default values
     /// BUSY will be high when in progress.
@@ -371,7 +371,7 @@ mod tests {
 
         /// Send a command to the controller.
         ///
-        /// Prefer calling `execute` on a [Commmand](../command/enum.Command.html) over calling this
+        /// Prefer calling `execute` on a [Command](../command/enum.Command.html) over calling this
         /// directly.
         fn send_command(&mut self, command: u8) -> Result<(), Self::Error> {
             self.write(command);
