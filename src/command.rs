@@ -1,7 +1,5 @@
 use core;
 use interface::DisplayInterface;
-#[cfg(target_arch = "arm")]
-extern crate rtt_target;
 
 const MAX_GATES: u16 = 296;
 const MAX_DUMMY_LINE_PERIOD: u8 = 127;

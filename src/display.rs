@@ -6,9 +6,6 @@ use config::Config;
 use hal;
 use interface::DisplayInterface;
 
-#[cfg(target_arch = "arm")]
-extern crate rtt_target;
-
 // Max display resolution is 176x296 // was 160x296
 /// The maximum number of rows supported by the controller
 pub const MAX_GATE_OUTPUTS: u16 = 296;
