@@ -22,7 +22,7 @@ version = "0.2.6"
 
 [dependencies.embedded-graphics]
 optional = true
-version = "0.7.1"
+version = "0.8.1"
 
 [dependencies.linux-embedded-hal]
 optional = true
@@ -30,7 +30,7 @@ version = "0.3.2"
 
 [dependencies.profont]
 optional = true
-version = "0.5.0"
+version = "0.7.0"
 
 [features]
 default = ["graphics"]
