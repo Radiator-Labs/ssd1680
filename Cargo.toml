@@ -1,14 +1,18 @@
 [package]
-name = "ssd1675"
+name = "ssd1680"
 version = "0.5.0"
-authors = ["Wesley Moore <wes@wezm.net>"]
-description = "Driver for the SSD1675 e-Paper display (EPD) controller, for use with embedded-hal"
+authors = [
+    "Wesley Moore <wes@wezm.net>",
+    "Phil Markgraf <philip.markgraf@kel.vin>",
+    "Phil Markgraf <ShakenCodes@gmail.com>",
+]
+description = "Driver for the SSD1680 e-Paper display (EPD) controller, for use with embedded-hal"
 
-documentation = "https://docs.rs/ssd1675"
-repository = "https://github.com/wezm/ssd1675"
+# documentation = "https://docs.rs/ssd1675"
+repository = "https://github.com/Radiator-Labs/ssd1680"
 
 readme = "README.md"
-keywords = ["embedded", "epd", "epaper", "display", "ssd1675"]
+keywords = ["embedded", "epd", "epaper", "display", "ssd1680"]
 categories = ["embedded", "no-std"]
 
 license = "MIT OR Apache-2.0"

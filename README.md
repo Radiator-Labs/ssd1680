@@ -1,14 +1,23 @@
-# SSD1675 ePaper Display Driver
+# SSD1680 ePaper Display Driver
 
-Rust driver for the [Solomon Systech SSD1675][SSD1675] e-Paper display (EPD)
+Rust driver for the [Solomon Systech SSD1680][SSD1680] e-Paper display (EPD)
 controller, for use with [embedded-hal].
 
-[![Build Status](https://travis-ci.org/wezm/ssd1675.svg?branch=master)](https://travis-ci.org/wezm/ssd1675)
-[![codecov](https://codecov.io/gh/wezm/ssd1675/branch/master/graph/badge.svg)](https://codecov.io/gh/wezm/ssd1675)
-[![crates.io](https://img.shields.io/crates/v/ssd1675.svg)](https://crates.io/crates/ssd1675)
-[![Documentation](https://docs.rs/ssd1675/badge.svg)][crate-docs]
+[![Build Status](https://travis-ci.org/Radiator-Labs/ssd1680.svg?branch=master)](https://travis-ci.org/Radiator-Labs/ssd1680)
+[![codecov](https://codecov.io/gh/Radiator-Labs/ssd1680/branch/master/graph/badge.svg)](https://codecov.io/gh/Radiator-Labs/ssd1680)
+<!-- [![crates.io](https://img.shields.io/crates/v/ssd1680.svg)](https://crates.io/crates/ssd1680) -->
+<!-- [![Documentation](https://docs.rs/ssd1680/badge.svg)][crate-docs] -->
 
-<img src="https://raw.githubusercontent.com/wezm/ssd1675/master/IMG_2198.jpg" width="459" alt="Photo of Inky pHAT ePaper display on Raspberry Pi Zero W" />
+<img src="https://raw.githubusercontent.com/Radiator-Labs/ssd1680/master/IMG_2435.jpg" width="459" alt="Photo of GDEY029T94 ePaper display on STM32WL55 board" />
+
+## Attribution
+
+This driver is based on the [SSD1675 driver](https://github.com/wezm/ssd1675) by [wezm](https://github.com/wezm).
+Work converting this driver to support the SSD1680 was performed as part of commercial
+development by [Kelvin](https://kel.vin/) (formerly Radiator Labs), a green energy company
+dedicated to decarbonizing the world's legacy buildings.
+
+The open source license of the original project is retained for this driver.
 
 ## Description
 
@@ -20,9 +29,11 @@ safe Rust. It supports the 4-wire SPI interface.
 
 The library has been tested and confirmed working on these devices:
 
-* Red/Black/White [Inky pHAT] version 2 on Raspberry Pi Zero (pictured above)
+* Black/White [GDEY029T94] on Nucleo-STM32WL55 (pictured above)
 
-## Examples
+## Obsoleted Examples
+
+The examples have not been updated from the SSD1675 and are not expected to operate.
 
 **Note:** To build the examples the `examples` feature needs to be enabled. E.g.
 
@@ -45,6 +56,7 @@ the Raspberry Pi.
 
 ## Credits
 
+* [SSD1675 eInk display driver](https://github.com/wezm/ssd1675)
 * [Waveshare EPD driver](https://github.com/caemor/epd-waveshare)
 * [SSD1306 OLED display driver](https://github.com/jamwaffles/ssd1306)
 * [SSD1322 OLED display driver](https://github.com/edarc/ssd1322)
@@ -52,16 +64,15 @@ the Raspberry Pi.
 
 ## License
 
-`ssd1675` is dual licenced under:
+`ssd1675` is dual licensed under:
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) **or**
-  http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) **or**
+  <http://www.apache.org/licenses/LICENSE-2.0>)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
-[crate-docs]: https://docs.rs/ssd1675
+<!-- [crate-docs]: https://docs.rs/ssd1680 -->
 [cross]: https://github.com/rust-embedded/cross
 [embedded-hal]: https://crates.io/crates/embedded-hal
 [Inky pHAT]: https://shop.pimoroni.com/products/inky-phat
-[LICENSE-APACHE]: https://github.com/wezm/ssd1675/blob/master/LICENSE-APACHE
-[LICENSE-MIT]: https://github.com/wezm/ssd1675/blob/master/LICENSE-MIT
-[SSD1675]: http://www.solomon-systech.com/en/product/advanced-display/bistable-display-driver-ic/SSD1675/
+[GDEY029T94]: https://www.good-display.com/product/389.html
+[SSD1680]: http://www.solomon-systech.com/en/product/advanced-display/bistable-display-driver-ic/SSD1680/
