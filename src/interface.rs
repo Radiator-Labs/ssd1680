@@ -114,6 +114,7 @@ where
     }
 
     fn write(&mut self, data: &[u8]) -> Result<(), SPI::Error> {
+        let _ = self.cs.set_high();
         // Select the controller with chip select (CS)
         let _ = self.cs.set_low();
 

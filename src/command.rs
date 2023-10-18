@@ -1,5 +1,7 @@
 use core;
 use interface::DisplayInterface;
+#[cfg(target_arch = "arm")]
+extern crate rtt_target;
 
 const MAX_GATES: u16 = 296;
 const MAX_DUMMY_LINE_PERIOD: u8 = 127;
@@ -41,6 +43,12 @@ pub enum RamOption {
     Normal,
     Bypass,
     Invert,
+}
+
+#[derive(Clone, Copy)]
+pub enum SourceOption {
+    SourceFromS0ToS175,
+    SourceFromS8ToS167,
 }
 
 #[derive(Clone, Copy)]
@@ -89,7 +97,7 @@ pub enum Command {
     // /// Read result with `ReadStatusBit` command
     // StartVCILevelDetection(u8),
     /// Specify internal or external temperature sensor
-    TemperatatSensorSelection(TemperatureSensor),
+    TemperatureSensorSelection(TemperatureSensor),
     /// Write to the temperature sensor register
     WriteTemperatureSensor(u16),
     /// Read from the temperature sensor register
@@ -101,7 +109,8 @@ pub enum Command {
     /// Set RAM content options for update display command.
     /// 0: Black/White RAM option
     /// 1: Red RAM option
-    UpdateDisplayOption1(RamOption, RamOption),
+    /// 2: Source option
+    UpdateDisplayOption1(RamOption, RamOption, SourceOption),
     /// Set display update sequence options
     UpdateDisplayOption2(u8),
     // Read from RAM (not implemented)
@@ -148,7 +157,7 @@ pub enum Command {
     /// Set RAM X address
     XAddress(u8),
     /// Set RAM Y address
-    YAddress(u8),
+    YAddress(u16),
     /// Set analog block control
     AnalogBlockControl(u8),
     /// Set digital block control
@@ -252,8 +261,14 @@ impl Command {
                 pack!(buf, 0x11, [axis | mode])
             }
             SoftReset => pack!(buf, 0x12, []),
-            // TemperatatSensorSelection(TemperatureSensor) => {
-            // }
+            TemperatureSensorSelection(temperature_sensor) => {
+                let sensor = match temperature_sensor {
+                    TemperatureSensor::External => 0x48_u8,
+                    TemperatureSensor::Internal => 0x80_u8,
+                };
+
+                pack!(buf, 0x18, [sensor])
+            }
             // WriteTemperatureSensor(u16) => {
             // }
             // ReadTemperatureSensor(u16) => {
@@ -261,8 +276,23 @@ impl Command {
             // WriteExternalTemperatureSensor(u8, u8, u8) => {
             // }
             UpdateDisplay => pack!(buf, 0x20, []),
-            // UpdateDisplayOption1(RamOption, RamOption) => {
-            // }
+            UpdateDisplayOption1(black_ram_option, red_ram_option, source_option) => {
+                let black = match black_ram_option {
+                    RamOption::Normal => 0b0000_0000,
+                    RamOption::Bypass => 0b0100_0000,
+                    RamOption::Invert => 0b1000_0000,
+                };
+                let red = match red_ram_option {
+                    RamOption::Normal => 0b0000_0000,
+                    RamOption::Bypass => 0b0000_0100,
+                    RamOption::Invert => 0b0000_1000,
+                };
+                let source = match source_option {
+                    SourceOption::SourceFromS0ToS175 => 0b0000_0000,
+                    SourceOption::SourceFromS8ToS167 => 0b1000_0000,
+                };
+                pack!(buf, 0x21, [black | red, source])
+            }
             UpdateDisplayOption2(value) => pack!(buf, 0x22, [value]),
             // EnterVCOMSensing => {
             // }
@@ -286,7 +316,10 @@ impl Command {
             // AutoWriteBlackPattern(u8) => {
             // }
             XAddress(address) => pack!(buf, 0x4E, [address]),
-            YAddress(address) => pack!(buf, 0x4F, [address]),
+            YAddress(address) => {
+                let [upper, lower] = address.to_be_bytes();
+                pack!(buf, 0x4F, [lower, upper])
+            }
             AnalogBlockControl(value) => pack!(buf, 0x74, [value]),
             DigitalBlockControl(value) => pack!(buf, 0x7E, [value]),
             _ => unimplemented!(),

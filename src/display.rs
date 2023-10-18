@@ -1,10 +1,13 @@
-extern crate libm;
-
-use hal;
-
-use command::{BufCommand, Command, DeepSleepMode};
+use command::{
+    BufCommand, Command, DataEntryMode, DeepSleepMode, IncrementAxis, RamOption, SourceOption,
+    TemperatureSensor,
+};
 use config::Config;
+use hal;
 use interface::DisplayInterface;
+
+#[cfg(target_arch = "arm")]
+extern crate rtt_target;
 
 // Max display resolution is 176x296 // was 160x296
 /// The maximum number of rows supported by the controller
@@ -13,8 +16,8 @@ pub const MAX_GATE_OUTPUTS: u16 = 296;
 pub const MAX_SOURCE_OUTPUTS: u8 = 176;
 
 // Magic numbers from the data sheet
-const ANALOG_BLOCK_CONTROL_MAGIC: u8 = 0x54;
-const DIGITAL_BLOCK_CONTROL_MAGIC: u8 = 0x3B;
+// const ANALOG_BLOCK_CONTROL_MAGIC: u8 = 0x54;
+// const DIGITAL_BLOCK_CONTROL_MAGIC: u8 = 0x3B;
 
 /// Represents the dimensions of the display.
 pub struct Dimensions {
@@ -33,7 +36,7 @@ pub struct Dimensions {
 /// For example the native orientation of the Inky pHAT display is a tall (portrait) 104x212
 /// display. `Rotate270` can be used to make it the right way up when attached to a Raspberry Pi
 /// Zero with the ports on the top.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Rotation {
     Rotate0,
     Rotate90,
@@ -76,6 +79,7 @@ where
         delay: &mut D,
     ) -> Result<(), I::Error> {
         self.interface.reset(delay);
+        self.interface.busy_wait();
         Command::SoftReset.execute(&mut self.interface)?;
         self.interface.busy_wait();
 
@@ -85,31 +89,33 @@ where
     /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
     fn init(&mut self) -> Result<(), I::Error> {
-        Command::AnalogBlockControl(ANALOG_BLOCK_CONTROL_MAGIC).execute(&mut self.interface)?;
-        Command::DigitalBlockControl(DIGITAL_BLOCK_CONTROL_MAGIC).execute(&mut self.interface)?;
-
-        Command::DriverOutputControl(self.config.dimensions.rows, 0x00)
+        Command::DriverOutputControl(self.config.dimensions.rows - 1, 0x00)
             .execute(&mut self.interface)?;
-
-        self.config.dummy_line_period.execute(&mut self.interface)?;
-        self.config.gate_line_width.execute(&mut self.interface)?;
-
-        // Command::GateDrivingVoltage(0b10000 | 0b0001);
-        // Command::SourceDrivingVoltage(0x2D, 0xB2, 0x22).execute(&mut self.interface)?;
-        self.config.write_vcom.execute(&mut self.interface)?;
-
-        // POR is HiZ. Need pull from config
-        // Command::BorderWaveform(u8).execute(&mut self.interface)?;
-
-        if let Some(ref write_lut) = self.config.write_lut {
-            write_lut.execute(&mut self.interface)?;
-        }
-
-        self.config.data_entry_mode.execute(&mut self.interface)?;
+        Command::DataEntryMode(
+            DataEntryMode::IncrementYIncrementX, // DataEntryMode::IncrementXDecrementY
+            IncrementAxis::Horizontal,
+        )
+        .execute(&mut self.interface)?;
+        Command::TemperatureSensorSelection(TemperatureSensor::Internal)
+            .execute(&mut self.interface)?;
 
         let end = self.config.dimensions.cols / 8 - 1;
         Command::StartEndXPosition(0, end).execute(&mut self.interface)?;
-        Command::StartEndYPosition(0, self.config.dimensions.rows).execute(&mut self.interface)?;
+        Command::StartEndYPosition(0, self.config.dimensions.rows - 1)
+            .execute(&mut self.interface)?;
+
+        Command::BorderWaveform(0x05_u8).execute(&mut self.interface)?;
+        Command::UpdateDisplayOption1(
+            RamOption::Normal,
+            RamOption::Normal,
+            SourceOption::SourceFromS8ToS167,
+        )
+        .execute(&mut self.interface)?;
+
+        Command::XAddress(0x00).execute(&mut self.interface)?;
+        Command::YAddress(self.config.dimensions.rows - 1).execute(&mut self.interface)?;
+
+        self.interface.busy_wait();
 
         Ok(())
     }
@@ -122,27 +128,25 @@ where
         &mut self,
         black: &[u8],
         red: &[u8],
-        delay: &mut D,
+        _delay: &mut D,
     ) -> Result<(), I::Error> {
         // Write the B/W RAM
-        let buf_limit = libm::ceilf((self.rows() * self.cols() as u16) as f32 / 8.) as usize;
+        let buf_size = self.rows() as usize * self.cols() as usize;
+        let limit_adder = if buf_size % 8 != 0 { 1 } else { 0 };
+        let buf_limit = (buf_size / 8) + limit_adder;
+
         Command::XAddress(0).execute(&mut self.interface)?;
-        Command::YAddress(0).execute(&mut self.interface)?;
+        Command::YAddress(self.config.dimensions.rows - 1).execute(&mut self.interface)?;
         BufCommand::WriteBlackData(&black[..buf_limit]).execute(&mut self.interface)?;
 
         // Write the Red RAM
         Command::XAddress(0).execute(&mut self.interface)?;
-        Command::YAddress(0).execute(&mut self.interface)?;
+        Command::YAddress(self.config.dimensions.rows - 1).execute(&mut self.interface)?;
         BufCommand::WriteRedData(&red[..buf_limit]).execute(&mut self.interface)?;
 
         // Kick off the display update
-        Command::UpdateDisplayOption2(0xC7).execute(&mut self.interface)?;
+        Command::UpdateDisplayOption2(0xF7).execute(&mut self.interface)?; // was 0xC7, should be 0xCF
         Command::UpdateDisplay.execute(&mut self.interface)?;
-        delay.delay_ms(50);
-        // TODO: We don't really need to wait here... the program can go off and do other things
-        // and only busy wait if it wants to talk to the display again. Could possibly treat
-        // the interface like a smart pointer in which deref would wait until it's not
-        // busy.
         self.interface.busy_wait();
 
         Ok(())

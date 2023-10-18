@@ -13,9 +13,6 @@ categories = ["embedded", "no-std"]
 
 license = "MIT OR Apache-2.0"
 
-[dependencies]
-libm = "0.2.2"
-
 [dependencies.embedded-hal]
 features = ["unproven"]
 version = "0.2.6"

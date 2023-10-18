@@ -40,11 +40,11 @@ pub struct BuilderError {}
 ///
 /// Passed to Display::new. Use `Builder` to construct a `Config`.
 pub struct Config<'a> {
-    pub(crate) dummy_line_period: Command,
-    pub(crate) gate_line_width: Command,
-    pub(crate) write_vcom: Command,
-    pub(crate) write_lut: Option<BufCommand<'a>>,
-    pub(crate) data_entry_mode: Command,
+    pub(crate) _dummy_line_period: Command,
+    pub(crate) _gate_line_width: Command,
+    pub(crate) _write_vcom: Command,
+    pub(crate) _write_lut: Option<BufCommand<'a>>,
+    pub(crate) _data_entry_mode: Command,
     pub(crate) dimensions: Dimensions,
     pub(crate) rotation: Rotation,
 }
@@ -168,12 +168,12 @@ impl<'a> Builder<'a> {
     /// Will fail if dimensions are not set.
     pub fn build(self) -> Result<Config<'a>, BuilderError> {
         Ok(Config {
-            dummy_line_period: self.dummy_line_period,
-            gate_line_width: self.gate_line_width,
-            write_vcom: self.write_vcom,
-            write_lut: self.write_lut,
-            data_entry_mode: self.data_entry_mode,
-            dimensions: self.dimensions.ok_or_else(|| BuilderError {})?,
+            _dummy_line_period: self.dummy_line_period,
+            _gate_line_width: self.gate_line_width,
+            _write_vcom: self.write_vcom,
+            _write_lut: self.write_lut,
+            _data_entry_mode: self.data_entry_mode,
+            dimensions: self.dimensions.ok_or(BuilderError {})?,
             rotation: self.rotation,
         })
     }
