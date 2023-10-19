@@ -80,7 +80,7 @@ pub enum Command {
     /// 3: Duration setting
     BoosterEnable(u8, u8, u8, u8),
     /// Set the scanning start position of the gate driver
-    GateScanStartPostion(u16),
+    GateScanStartPosition(u16),
     /// Set deep sleep mode
     DeepSleepMode(DeepSleepMode),
     /// Set the data entry mode and increment axis
@@ -230,7 +230,7 @@ impl Command {
             BoosterEnable(phase1, phase2, phase3, duration) => {
                 pack!(buf, 0x0C, [phase1, phase2, phase3, duration])
             }
-            GateScanStartPostion(position) => {
+            GateScanStartPosition(position) => {
                 debug_assert!(Contains::contains(&(0..MAX_GATES), position));
                 let [upper, lower] = position.to_be_bytes();
                 pack!(buf, 0x0F, [lower, upper])
