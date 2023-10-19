@@ -75,10 +75,10 @@ where
         &mut self,
         delay: &mut D,
     ) -> Result<(), I::Error> {
+        self.interface.busy_wait();
         self.interface.reset(delay);
         self.interface.busy_wait();
         Command::SoftReset.execute(&mut self.interface)?;
-        self.interface.busy_wait();
 
         self.init()
     }
@@ -86,6 +86,7 @@ where
     /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
     fn init(&mut self) -> Result<(), I::Error> {
+        self.interface.busy_wait();
         Command::DriverOutputControl(self.config.dimensions.rows - 1, 0x00)
             .execute(&mut self.interface)?;
         Command::DataEntryMode(
@@ -112,8 +113,6 @@ where
         Command::XAddress(0x00).execute(&mut self.interface)?;
         Command::YAddress(self.config.dimensions.rows - 1).execute(&mut self.interface)?;
 
-        self.interface.busy_wait();
-
         Ok(())
     }
 
@@ -127,6 +126,7 @@ where
         red: &[u8],
         _delay: &mut D,
     ) -> Result<(), I::Error> {
+        self.interface.busy_wait();
         // Write the B/W RAM
         let buf_size = self.rows() as usize * self.cols() as usize;
         let limit_adder = if buf_size % 8 != 0 { 1 } else { 0 };
@@ -144,7 +144,6 @@ where
         // Kick off the display update
         Command::UpdateDisplayOption2(0xF7).execute(&mut self.interface)?; // was 0xC7, should be 0xCF
         Command::UpdateDisplay.execute(&mut self.interface)?;
-        self.interface.busy_wait();
 
         Ok(())
     }
@@ -154,6 +153,7 @@ where
     /// This puts the display controller into a low power mode. `reset` must be called to wake it
     /// from sleep.
     pub fn deep_sleep(&mut self) -> Result<(), I::Error> {
+        self.interface.busy_wait();
         Command::DeepSleepMode(DeepSleepMode::PreserveRAM).execute(&mut self.interface)
     }
 
