@@ -64,7 +64,7 @@ the Raspberry Pi.
 
 ## License
 
-`ssd1675` is dual licensed under:
+`ssd1680` is dual licensed under:
 
 * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) **or**
   <http://www.apache.org/licenses/LICENSE-2.0>)
