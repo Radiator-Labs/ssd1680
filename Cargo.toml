@@ -8,7 +8,7 @@ authors = [
 ]
 description = "Driver for the SSD1680 e-Paper display (EPD) controller, for use with embedded-hal"
 
-# documentation = "https://docs.rs/ssd1675"
+# documentation = "https://docs.rs/ssd1680"
 repository = "https://github.com/Radiator-Labs/ssd1680"
 
 readme = "README.md"

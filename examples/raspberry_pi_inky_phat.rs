@@ -4,8 +4,8 @@ use linux_embedded_hal::sysfs_gpio::Direction;
 use linux_embedded_hal::Delay;
 use linux_embedded_hal::{Pin, Spidev};
 
-extern crate ssd1675;
-use ssd1675::{Builder, Color, Dimensions, Display, GraphicDisplay, Rotation};
+extern crate ssd1680;
+use ssd1680::{Builder, Color, Dimensions, Display, GraphicDisplay, Rotation};
 
 // Graphics
 #[macro_use]
@@ -92,7 +92,7 @@ fn main() -> Result<(), std::io::Error> {
     // Initialise display controller
     let mut delay = Delay {};
 
-    let controller = ssd1675::Interface::new(spi, cs, busy, dc, reset);
+    let controller = ssd1680::Interface::new(spi, cs, busy, dc, reset);
 
     let mut black_buffer = [0u8; ROWS as usize * COLS as usize / 8];
     let mut red_buffer = [0u8; ROWS as usize * COLS as usize / 8];

@@ -1,9 +1,9 @@
 #![no_std]
 
-//! SSD1675 ePaper Display Driver
+//! ssd1680 ePaper Display Driver
 //!
 //! For a complete example see
-//! [the Raspberry Pi Inky pHAT example](https://github.com/wezm/ssd1675/blob/master/examples/raspberry_pi_inky_phat.rs).
+//! [the Raspberry Pi Inky pHAT example](https://github.com/Radiator-Labs/ssd1680/blob/master/examples/raspberry_pi_inky_phat.rs).
 //!
 //! ### Usage
 //!
@@ -13,8 +13,8 @@
 //! * A [display configuration][Config]
 //! * A [Display]
 //!
-//! The [Interface] captures the details of the hardware connection to the SSD1675 controller. This
-//! includes an SPI device and some GPIO pins. The SSD1675 can control many different displays that
+//! The [Interface] captures the details of the hardware connection to the ssd1680 controller. This
+//! includes an SPI device and some GPIO pins. The ssd1680 can control many different displays that
 //! vary in dimensions, rotation, and driving characteristics. The [Config] captures these details.
 //! To aid in constructing the [Config] there is a [Builder] interface. Finally when you have an
 //! interface and a [Config] a [Display] instance can be created.

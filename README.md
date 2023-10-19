@@ -8,7 +8,7 @@ controller, for use with [embedded-hal].
 <!-- [![crates.io](https://img.shields.io/crates/v/ssd1680.svg)](https://crates.io/crates/ssd1680) -->
 <!-- [![Documentation](https://docs.rs/ssd1680/badge.svg)][crate-docs] -->
 
-<img src="https://raw.githubusercontent.com/Radiator-Labs/ssd1680/master/IMG_2435.jpg" width="459" alt="Photo of GDEY029T94 ePaper display on STM32WL55 board" />
+![Photo of GDEY029T94 ePaper display on STM32WL55 board](IMG_2435.jpg)
 
 ## Attribution
 

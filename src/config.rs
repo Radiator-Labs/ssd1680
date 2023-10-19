@@ -9,7 +9,7 @@ use display::{self, Dimensions, Rotation};
 /// ### Example
 ///
 /// ```
-/// use ssd1675::{Builder, Dimensions, Rotation};
+/// use ssd1680::{Builder, Dimensions, Rotation};
 ///
 /// let config = Builder::new()
 ///     .dimensions(Dimensions {

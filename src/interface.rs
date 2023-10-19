@@ -29,7 +29,7 @@ pub trait DisplayInterface {
 /// ### Example
 ///
 /// This example uses the Linux implementation of the embedded HAL traits to build a display
-/// interface. For a complete example see [the Raspberry Pi Inky pHAT example](https://github.com/wezm/ssd1675/blob/master/examples/raspberry_pi_inky_phat.rs).
+/// interface. For a complete example see [the Raspberry Pi Inky pHAT example](https://github.com/Radiator-Labs/ssd1680/blob/master/examples/raspberry_pi_inky_phat.rs).
 ///
 /// ```ignore
 /// extern crate linux_embedded_hal;
@@ -38,8 +38,8 @@ pub trait DisplayInterface {
 /// use linux_embedded_hal::Delay;
 /// use linux_embedded_hal::{Pin, Spidev};
 ///
-/// extern crate ssd1675;
-/// use ssd1675::{Builder, Color, Dimensions, Display, GraphicDisplay, Rotation};
+/// extern crate ssd1680;
+/// use ssd1680::{Builder, Color, Dimensions, Display, GraphicDisplay, Rotation};
 ///
 /// // Configure SPI
 /// let mut spi = Spidev::open("/dev/spidev0.0").expect("SPI device");
@@ -78,7 +78,7 @@ pub trait DisplayInterface {
 /// reset.set_value(1).expect("reset Value set to 1");
 ///
 /// // Build the interface from the pins and SPI device
-/// let controller = ssd1675::Interface::new(spi, cs, busy, dc, reset);
+/// let controller = ssd1680::Interface::new(spi, cs, busy, dc, reset);
 
 #[allow(dead_code)] // Prevent warning about CS being unused
 pub struct Interface<SPI, CS, BUSY, DC, RESET> {
