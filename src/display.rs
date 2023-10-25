@@ -75,7 +75,6 @@ where
         &mut self,
         delay: &mut D,
     ) -> Result<(), I::Error> {
-        self.interface.busy_wait();
         self.interface.reset(delay);
         self.interface.busy_wait();
         Command::SoftReset.execute(&mut self.interface)?;
