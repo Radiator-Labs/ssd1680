@@ -37,6 +37,23 @@ pub enum TemperatureSensor {
 }
 
 #[derive(Clone, Copy)]
+#[allow(non_camel_case_types)]
+pub enum DisplayUpdateSequenceOption {
+    EnableClockSignal,
+    DisableClockSignal,
+    EnableClockSignal_EnableAnalog,
+    DisableAnalog_DisableClockSignal,
+    EnableClockSignal_LoadLutMode1_DisableClockSignal,
+    EnableClockSignal_LoadLutMode2_DisableClockSignal,
+    EnableClockSignal_LoadTemp_LoadLutMode1_DisableClockSignal,
+    EnableClockSignal_LoadTemp_LoadLutMode2_DisableClockSignal,
+    EnableClockSignal_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator,
+    EnableClockSignal_EnableAnalog_DisplayMode2_DisableAnalog_DisableOscillator,
+    EnableClockSignal_LoadTemp_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator,
+    EnableClockSignal_LoadTemp_EnableAnalog_DisplayMode2_DisableAnalog_DisableOscillator,
+}
+
+#[derive(Clone, Copy)]
 pub enum RamOption {
     Normal,
     Bypass,
@@ -110,7 +127,7 @@ pub enum Command {
     /// 2: Source option
     UpdateDisplayOption1(RamOption, RamOption, SourceOption),
     /// Set display update sequence options
-    UpdateDisplayOption2(u8),
+    UpdateDisplayOption2(DisplayUpdateSequenceOption),
     // Read from RAM (not implemented)
     // ReadData,
     /// Enter VCOM sensing and hold for duration defined by VCOMSenseDuration
@@ -267,8 +284,10 @@ impl Command {
 
                 pack!(buf, 0x18, [sensor])
             }
-            // WriteTemperatureSensor(u16) => {
-            // }
+            WriteTemperatureSensor(value) => {
+                let values = value.to_be_bytes();
+                pack!(buf, 0x1A, [values[0], values[1]])
+            }
             // ReadTemperatureSensor(u16) => {
             // }
             // WriteExternalTemperatureSensor(u8, u8, u8) => {
@@ -291,7 +310,23 @@ impl Command {
                 };
                 pack!(buf, 0x21, [black | red, source])
             }
-            UpdateDisplayOption2(value) => pack!(buf, 0x22, [value]),
+            UpdateDisplayOption2(update_sequence_option) => {
+                let option = match update_sequence_option {
+                    DisplayUpdateSequenceOption::EnableClockSignal => 0x80_u8,
+                    DisplayUpdateSequenceOption::DisableClockSignal => 0x01_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog => 0xC0_u8,
+                    DisplayUpdateSequenceOption::DisableAnalog_DisableClockSignal => 0x03_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadLutMode1_DisableClockSignal => 0x91_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadLutMode2_DisableClockSignal => 0x99_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadTemp_LoadLutMode1_DisableClockSignal => 0xB1_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadTemp_LoadLutMode2_DisableClockSignal => 0xB9_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator => 0xC7_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode2_DisableAnalog_DisableOscillator => 0xCF_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadTemp_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator => 0xF7_u8,
+                    DisplayUpdateSequenceOption::EnableClockSignal_LoadTemp_EnableAnalog_DisplayMode2_DisableAnalog_DisableOscillator => 0xFF_u8,
+                };
+                pack!(buf, 0x22, [option])
+            }
             // EnterVCOMSensing => {
             // }
             // VCOMSenseDuration(u8) => {

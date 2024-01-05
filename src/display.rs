@@ -1,6 +1,6 @@
-use command::{
-    BufCommand, Command, DataEntryMode, DeepSleepMode, IncrementAxis, RamOption, SourceOption,
-    TemperatureSensor,
+use crate::command::{
+    BufCommand, Command, DataEntryMode, DeepSleepMode, DisplayUpdateSequenceOption, IncrementAxis,
+    RamOption, SourceOption, TemperatureSensor,
 };
 use config::Config;
 use hal;
@@ -75,16 +75,24 @@ where
         &mut self,
         delay: &mut D,
     ) -> Result<(), I::Error> {
+        self.chip_reset(delay)?;
+        self.init_for_fast()?;
+        self.init()
+    }
+
+    fn chip_reset<D: hal::blocking::delay::DelayMs<u8>>(
+        &mut self,
+        delay: &mut D,
+    ) -> Result<(), I::Error> {
         self.interface.reset(delay);
         self.interface.busy_wait();
-        Command::SoftReset.execute(&mut self.interface)?;
-
-        self.init()
+        Command::SoftReset.execute(&mut self.interface)
     }
 
     /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
     fn init(&mut self) -> Result<(), I::Error> {
+        // Matches Section 9: Typical Operating Sequence from the data sheet
         self.interface.busy_wait();
         Command::DriverOutputControl(self.config.dimensions.rows - 1, 0x00)
             .execute(&mut self.interface)?;
@@ -115,11 +123,49 @@ where
         Ok(())
     }
 
+    fn init_for_fast(&mut self) -> Result<(), I::Error> {
+        // Matches code example from GoodDisplay
+        Command::TemperatureSensorSelection(TemperatureSensor::Internal)
+            .execute(&mut self.interface)?;
+        Command::UpdateDisplayOption2(
+            DisplayUpdateSequenceOption::EnableClockSignal_LoadTemp_LoadLutMode1_DisableClockSignal,
+        )
+        .execute(&mut self.interface)?;
+        Command::UpdateDisplay.execute(&mut self.interface)?;
+        self.interface.busy_wait();
+
+        Command::WriteTemperatureSensor(0x6400).execute(&mut self.interface)?;
+
+        Command::UpdateDisplayOption2(
+            DisplayUpdateSequenceOption::EnableClockSignal_LoadLutMode1_DisableClockSignal,
+        )
+        .execute(&mut self.interface)?;
+        Command::UpdateDisplay.execute(&mut self.interface)?;
+        self.interface.busy_wait();
+
+        Ok(())
+    }
+
     /// Update the display by writing the supplied B/W and Red buffers to the controller.
     ///
     /// This method will write the two buffers to the controller then initiate the update
     /// display command. Currently it will busy wait until the update has completed.
     pub fn update<D: hal::blocking::delay::DelayMs<u8>>(
+        &mut self,
+        black: &[u8],
+        red: &[u8],
+        delay: &mut D,
+    ) -> Result<(), I::Error> {
+        self.update_impl(black, red, delay)?;
+
+        // Kick off the display update
+        Command::UpdateDisplayOption2(DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator).execute(&mut self.interface)?; // was 0xC7, should be 0xCF
+        Command::UpdateDisplay.execute(&mut self.interface)?;
+
+        Ok(())
+    }
+
+    fn update_impl<D: hal::blocking::delay::DelayMs<u8>>(
         &mut self,
         black: &[u8],
         red: &[u8],
@@ -139,10 +185,6 @@ where
         Command::XAddress(0).execute(&mut self.interface)?;
         Command::YAddress(self.config.dimensions.rows - 1).execute(&mut self.interface)?;
         BufCommand::WriteRedData(&red[..buf_limit]).execute(&mut self.interface)?;
-
-        // Kick off the display update
-        Command::UpdateDisplayOption2(0xF7).execute(&mut self.interface)?; // was 0xC7, should be 0xCF
-        Command::UpdateDisplay.execute(&mut self.interface)?;
 
         Ok(())
     }
