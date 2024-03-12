@@ -1,5 +1,4 @@
-use core;
-use interface::DisplayInterface;
+use crate::interface::DisplayInterface;
 
 const MAX_GATES: u16 = 296;
 const MAX_DUMMY_LINE_PERIOD: u8 = 127;
@@ -233,7 +232,7 @@ macro_rules! pack {
 
 impl Command {
     /// Execute the command, transmitting any associated data as well.
-    pub fn execute<I: DisplayInterface>(&self, interface: &mut I) -> Result<(), I::Error> {
+    pub async fn execute<I: DisplayInterface>(&self, interface: &mut I) -> Result<(), I::Error> {
         use self::Command::*;
 
         let mut buf = [0u8; 4];
@@ -358,18 +357,18 @@ impl Command {
             _ => unimplemented!(),
         };
 
-        interface.send_command(command)?;
+        interface.send_command(command).await?;
         if data.is_empty() {
             Ok(())
         } else {
-            interface.send_data(data)
+            interface.send_data(data).await
         }
     }
 }
 
 impl<'buf> BufCommand<'buf> {
     /// Execute the command, transmitting the associated buffer as well.
-    pub fn execute<I: DisplayInterface>(&self, interface: &mut I) -> Result<(), I::Error> {
+    pub async fn execute<I: DisplayInterface>(&self, interface: &mut I) -> Result<(), I::Error> {
         use self::BufCommand::*;
 
         let (command, data) = match self {
@@ -378,11 +377,11 @@ impl<'buf> BufCommand<'buf> {
             WriteLUT(buffer) => (0x32, buffer),
         };
 
-        interface.send_command(command)?;
+        interface.send_command(command).await?;
         if data.is_empty() {
             Ok(())
         } else {
-            interface.send_data(data)
+            interface.send_data(data).await
         }
     }
 }
@@ -440,13 +439,13 @@ mod tests {
         ///
         /// Prefer calling `execute` on a [Command](../command/enum.Command.html) over calling this
         /// directly.
-        fn send_command(&mut self, command: u8) -> Result<(), Self::Error> {
+        async fn send_command(&mut self, command: u8) -> Result<(), Self::Error> {
             self.write(command);
             Ok(())
         }
 
         /// Send data for a command.
-        fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        async fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error> {
             for byte in data {
                 self.write(*byte)
             }
@@ -454,26 +453,26 @@ mod tests {
         }
 
         /// Reset the controller.
-        fn reset<D: DelayNs>(&mut self, _delay: &mut D) {
+        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) {
             self.data = [0; 256];
             self.offset = 0;
         }
 
         /// Wait for the controller to indicate it is not busy.
-        fn busy_wait(&mut self) {
+        async fn busy_wait(&mut self) {
             // nop
         }
     }
 
-    #[test]
-    fn test_command_execute() {
+    #[futures_test::test]
+    async fn test_command_execute() {
         let mut interface = MockInterface::new();
         let upper = 0x12;
         let lower = 0x34;
         let scanning_seq_and_dir = 1;
         let command = Command::DriverOutputControl(0x1234, scanning_seq_and_dir);
 
-        command.execute(&mut interface).unwrap();
+        command.execute(&mut interface).await.unwrap();
         assert_eq!(
             interface.data(),
             &[0x01, lower, upper, scanning_seq_and_dir]

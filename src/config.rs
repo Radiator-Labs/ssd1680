@@ -1,5 +1,7 @@
-use command::{BufCommand, Command, DataEntryMode, IncrementAxis};
-use display::{self, Dimensions, Rotation};
+use crate::{
+    command::{BufCommand, Command, DataEntryMode, IncrementAxis},
+    display::{self, Dimensions, Rotation},
+};
 
 /// Builder for constructing a display Config.
 ///

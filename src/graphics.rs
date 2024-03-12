@@ -1,11 +1,13 @@
-use color::Color;
+use crate::{
+    color::Color,
+    display::{Display, Rotation},
+    interface::DisplayInterface,
+};
 use core::{
     convert::AsMut,
     ops::{Deref, DerefMut},
 };
-use display::{Display, Rotation};
 use embedded_hal::delay::DelayNs;
-use interface::DisplayInterface;
 
 /// A display that holds buffers for drawing into and updating the display from.
 ///
@@ -39,9 +41,10 @@ where
     }
 
     /// Update the display by writing the buffers to the controller.
-    pub fn update<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
+    pub async fn update<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.display
             .update(self.black_buffer.as_mut(), self.red_buffer.as_mut(), delay)
+            .await
     }
 
     /// Clear the buffers, filling them a single color.
@@ -172,7 +175,12 @@ where
 mod tests {
     use self::embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
     use super::*;
-    use {Builder, Color, Dimensions, Display, DisplayInterface, GraphicDisplay, Rotation};
+    use crate::{
+        color::Color,
+        config::Builder,
+        display::{Dimensions, Display, Rotation},
+        graphics::GraphicDisplay,
+    };
 
     const ROWS: u16 = 3;
     const COLS: u8 = 8;
@@ -190,17 +198,17 @@ mod tests {
     impl DisplayInterface for MockInterface {
         type Error = MockError;
 
-        fn reset<D: DelayNs>(&mut self, _delay: &mut D) {}
+        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) {}
 
-        fn send_command(&mut self, _command: u8) -> Result<(), Self::Error> {
+        async fn send_command(&mut self, _command: u8) -> Result<(), Self::Error> {
             Ok(())
         }
 
-        fn send_data(&mut self, _data: &[u8]) -> Result<(), Self::Error> {
+        async fn send_data(&mut self, _data: &[u8]) -> Result<(), Self::Error> {
             Ok(())
         }
 
-        fn busy_wait(&mut self) {}
+        async fn busy_wait(&mut self) {}
     }
 
     fn build_mock_display<'a>() -> Display<'a, MockInterface> {

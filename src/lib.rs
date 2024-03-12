@@ -34,12 +34,6 @@
 //! [Builder]: config/struct.Builder.html
 //! [embedded-graphics]: https://crates.io/crates/embedded-graphics
 
-extern crate embedded_hal;
-
-#[cfg(test)]
-#[macro_use]
-extern crate std;
-
 mod color;
 pub mod command;
 pub mod config;

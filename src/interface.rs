@@ -1,9 +1,10 @@
-use core::fmt::Debug;
+use core::{fmt::Debug, future::Future};
+use embassy_embedded_hal::shared_bus::SpiDeviceError;
 use embedded_hal::{
     delay::DelayNs,
     digital::{InputPin, OutputPin},
-    spi::SpiBus,
 };
+use embedded_hal_async::spi::SpiDevice;
 
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
 const RESET_DELAY_MS: u32 = 10;
@@ -16,16 +17,16 @@ pub trait DisplayInterface {
     ///
     /// Prefer calling `execute` on a [Command](../command/enum.Command.html) over calling this
     /// directly.
-    fn send_command(&mut self, command: u8) -> Result<(), Self::Error>;
+    fn send_command(&mut self, command: u8) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Send data for a command.
-    fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error>;
+    fn send_data(&mut self, data: &[u8]) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Reset the controller.
-    fn reset<D: DelayNs>(&mut self, delay: &mut D);
+    fn reset<D: DelayNs>(&mut self, delay: &mut D) -> impl Future<Output = ()>;
 
     /// Wait for the controller to indicate it is not busy.
-    fn busy_wait(&mut self);
+    fn busy_wait(&mut self) -> impl Future<Output = ()>;
 }
 
 /// The hardware interface to a display.
@@ -85,11 +86,14 @@ pub trait DisplayInterface {
 /// let controller = ssd1680::Interface::new(spi, cs, busy, dc, reset);
 
 #[allow(dead_code)] // Prevent warning about CS being unused
-pub struct Interface<SPI, CS, BUSY, DC, RESET> {
-    /// SPI interface
-    spi: SPI,
-    /// CS (chip select) for SPI (output)
-    cs: CS,
+pub struct Interface<SpiDev, BUS, CS, BUSY, DC, RESET>
+where
+    SpiDev: SpiDevice<u8, Error = SpiDeviceError<BUS, CS>>,
+    BUS: embedded_hal::spi::Error + Debug + PartialEq,
+    CS: Debug + PartialEq,
+{
+    /// SPI Device interface (chip select is owned by this)
+    spi: SpiDev,
     /// Active low busy pin (input)
     busy: BUSY,
     /// Data/Command Control Pin (High for data, Low for command) (output)
@@ -98,81 +102,75 @@ pub struct Interface<SPI, CS, BUSY, DC, RESET> {
     reset: RESET,
 }
 
-impl<SPI, CS, BUSY, DC, RESET> Interface<SPI, CS, BUSY, DC, RESET>
+impl<SpiDev, BUS, CS, BUSY, DC, RESET> Interface<SpiDev, BUS, CS, BUSY, DC, RESET>
 where
-    SPI: embedded_hal::spi::SpiBus,
-    CS: OutputPin,
+    SpiDev: SpiDevice<u8, Error = SpiDeviceError<BUS, CS>>,
+    BUS: embedded_hal::spi::Error + Debug + PartialEq,
+    CS: Debug + PartialEq,
     BUSY: InputPin,
     DC: OutputPin,
     RESET: OutputPin,
 {
     /// Create a new Interface from embedded hal traits.
-    pub fn new(spi: SPI, cs: CS, busy: BUSY, dc: DC, reset: RESET) -> Self {
+    pub fn new(spi: SpiDev, busy: BUSY, dc: DC, reset: RESET) -> Self {
         Self {
             spi,
-            cs,
             busy,
             dc,
             reset,
         }
     }
 
-    fn write(&mut self, data: &[u8]) -> Result<(), SPI::Error> {
-        let _ = self.cs.set_high();
-        // Select the controller with chip select (CS)
-        let _ = self.cs.set_low();
-
+    async fn write(&mut self, data: &[u8]) -> Result<(), SpiDeviceError<BUS, CS>> {
         // Linux has a default limit of 4096 bytes per SPI transfer
         // https://github.com/torvalds/linux/blob/ccda4af0f4b92f7b4c308d3acc262f4a7e3affad/drivers/spi/spidev.c#L93
         if cfg!(target_os = "linux") {
             for data_chunk in data.chunks(4096) {
-                self.spi.write(data_chunk)?;
+                self.spi.write(data_chunk).await?;
             }
         } else {
-            self.spi.write(data)?;
+            self.spi.write(data).await?;
         }
-
-        // Release the controller
-        let _ = self.cs.set_high();
 
         Ok(())
     }
 }
 
-impl<SPI, CS, BUSY, DC, RESET> DisplayInterface for Interface<SPI, CS, BUSY, DC, RESET>
+impl<SpiDev, BUS, CS, BUSY, DC, RESET> DisplayInterface
+    for Interface<SpiDev, BUS, CS, BUSY, DC, RESET>
 where
-    SPI: SpiBus,
-    CS: OutputPin,
-    CS::Error: Debug,
+    SpiDev: SpiDevice<u8, Error = SpiDeviceError<BUS, CS>>,
+    BUS: embedded_hal::spi::Error + Debug + PartialEq,
+    CS: Debug + PartialEq,
     BUSY: InputPin,
     DC: OutputPin,
     DC::Error: Debug,
     RESET: OutputPin,
     RESET::Error: Debug,
 {
-    type Error = SPI::Error;
+    type Error = SpiDev::Error;
 
-    fn reset<D: DelayNs>(&mut self, delay: &mut D) {
+    async fn reset<D: DelayNs>(&mut self, delay: &mut D) {
         self.reset.set_low().unwrap();
         delay.delay_ms(RESET_DELAY_MS);
         self.reset.set_high().unwrap();
         delay.delay_ms(RESET_DELAY_MS);
     }
 
-    fn send_command(&mut self, command: u8) -> Result<(), Self::Error> {
+    async fn send_command(&mut self, command: u8) -> Result<(), SpiDeviceError<BUS, CS>> {
         self.dc.set_low().unwrap();
-        self.write(&[command])?;
+        self.write(&[command]).await?;
         self.dc.set_high().unwrap();
 
         Ok(())
     }
 
-    fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+    async fn send_data(&mut self, data: &[u8]) -> Result<(), SpiDeviceError<BUS, CS>> {
         self.dc.set_high().unwrap();
-        self.write(data)
+        self.write(data).await
     }
 
-    fn busy_wait(&mut self) {
+    async fn busy_wait(&mut self) {
         while match self.busy.is_high() {
             Ok(x) => x,
             _ => false,
