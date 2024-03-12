@@ -408,6 +408,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use embedded_hal::delay::DelayNs;
 
     struct MockInterface {
         data: [u8; 256],
@@ -453,13 +454,13 @@ mod tests {
         }
 
         /// Reset the controller.
-        fn reset<D: hal::blocking::delay::DelayMs<u8>>(&mut self, _delay: &mut D) {
+        fn reset<D: DelayNs>(&mut self, _delay: &mut D) {
             self.data = [0; 256];
             self.offset = 0;
         }
 
         /// Wait for the controller to indicate it is not busy.
-        fn busy_wait(&self) {
+        fn busy_wait(&mut self) {
             // nop
         }
     }

@@ -4,7 +4,7 @@ use core::{
     ops::{Deref, DerefMut},
 };
 use display::{Display, Rotation};
-use hal;
+use embedded_hal::delay::DelayNs;
 use interface::DisplayInterface;
 
 /// A display that holds buffers for drawing into and updating the display from.
@@ -39,10 +39,7 @@ where
     }
 
     /// Update the display by writing the buffers to the controller.
-    pub fn update<D: hal::blocking::delay::DelayMs<u8>>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<(), I::Error> {
+    pub fn update<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.display
             .update(self.black_buffer.as_mut(), self.red_buffer.as_mut(), delay)
     }
@@ -193,7 +190,7 @@ mod tests {
     impl DisplayInterface for MockInterface {
         type Error = MockError;
 
-        fn reset<D: hal::blocking::delay::DelayMs<u8>>(&mut self, _delay: &mut D) {}
+        fn reset<D: DelayNs>(&mut self, _delay: &mut D) {}
 
         fn send_command(&mut self, _command: u8) -> Result<(), Self::Error> {
             Ok(())
@@ -203,7 +200,7 @@ mod tests {
             Ok(())
         }
 
-        fn busy_wait(&self) {}
+        fn busy_wait(&mut self) {}
     }
 
     fn build_mock_display<'a>() -> Display<'a, MockInterface> {

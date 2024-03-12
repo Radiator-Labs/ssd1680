@@ -3,7 +3,7 @@ use crate::command::{
     RamOption, SourceOption, TemperatureSensor,
 };
 use config::Config;
-use hal;
+use embedded_hal::delay::DelayNs;
 use interface::DisplayInterface;
 
 // Max display resolution is 176x296 // was 160x296
@@ -71,19 +71,13 @@ where
     /// Perform a hardware reset followed by software reset.
     ///
     /// This will wake a controller that has previously entered deep sleep.
-    pub fn reset<D: hal::blocking::delay::DelayMs<u8>>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<(), I::Error> {
+    pub fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.chip_reset(delay)?;
         self.init_for_fast()?;
         self.init()
     }
 
-    fn chip_reset<D: hal::blocking::delay::DelayMs<u8>>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<(), I::Error> {
+    fn chip_reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.interface.reset(delay);
         self.interface.busy_wait();
         Command::SoftReset.execute(&mut self.interface)
@@ -150,7 +144,7 @@ where
     ///
     /// This method will write the two buffers to the controller then initiate the update
     /// display command. Currently it will busy wait until the update has completed.
-    pub fn update<D: hal::blocking::delay::DelayMs<u8>>(
+    pub fn update<D: DelayNs>(
         &mut self,
         black: &[u8],
         red: &[u8],
@@ -165,7 +159,7 @@ where
         Ok(())
     }
 
-    fn update_impl<D: hal::blocking::delay::DelayMs<u8>>(
+    fn update_impl<D: DelayNs>(
         &mut self,
         black: &[u8],
         red: &[u8],

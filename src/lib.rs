@@ -2,9 +2,6 @@
 
 //! ssd1680 ePaper Display Driver
 //!
-//! For a complete example see
-//! [the Raspberry Pi Inky pHAT example](https://github.com/Radiator-Labs/ssd1680/blob/master/examples/raspberry_pi_inky_phat.rs).
-//!
 //! ### Usage
 //!
 //! To control a display you will need:
@@ -37,7 +34,7 @@
 //! [Builder]: config/struct.Builder.html
 //! [embedded-graphics]: https://crates.io/crates/embedded-graphics
 
-extern crate embedded_hal as hal;
+extern crate embedded_hal;
 
 #[cfg(test)]
 #[macro_use]

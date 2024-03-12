@@ -1,8 +1,12 @@
 use core::fmt::Debug;
-use hal;
+use embedded_hal::{
+    delay::DelayNs,
+    digital::{InputPin, OutputPin},
+    spi::SpiBus,
+};
 
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
-const RESET_DELAY_MS: u8 = 10;
+const RESET_DELAY_MS: u32 = 10;
 
 /// Trait implemented by displays to provide implementation of core functionality.
 pub trait DisplayInterface {
@@ -18,10 +22,10 @@ pub trait DisplayInterface {
     fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error>;
 
     /// Reset the controller.
-    fn reset<D: hal::blocking::delay::DelayMs<u8>>(&mut self, delay: &mut D);
+    fn reset<D: DelayNs>(&mut self, delay: &mut D);
 
     /// Wait for the controller to indicate it is not busy.
-    fn busy_wait(&self);
+    fn busy_wait(&mut self);
 }
 
 /// The hardware interface to a display.
@@ -96,11 +100,11 @@ pub struct Interface<SPI, CS, BUSY, DC, RESET> {
 
 impl<SPI, CS, BUSY, DC, RESET> Interface<SPI, CS, BUSY, DC, RESET>
 where
-    SPI: hal::blocking::spi::Write<u8>,
-    CS: hal::digital::v2::OutputPin,
-    BUSY: hal::digital::v2::InputPin,
-    DC: hal::digital::v2::OutputPin,
-    RESET: hal::digital::v2::OutputPin,
+    SPI: embedded_hal::spi::SpiBus,
+    CS: OutputPin,
+    BUSY: InputPin,
+    DC: OutputPin,
+    RESET: OutputPin,
 {
     /// Create a new Interface from embedded hal traits.
     pub fn new(spi: SPI, cs: CS, busy: BUSY, dc: DC, reset: RESET) -> Self {
@@ -137,18 +141,18 @@ where
 
 impl<SPI, CS, BUSY, DC, RESET> DisplayInterface for Interface<SPI, CS, BUSY, DC, RESET>
 where
-    SPI: hal::blocking::spi::Write<u8>,
-    CS: hal::digital::v2::OutputPin,
+    SPI: SpiBus,
+    CS: OutputPin,
     CS::Error: Debug,
-    BUSY: hal::digital::v2::InputPin,
-    DC: hal::digital::v2::OutputPin,
+    BUSY: InputPin,
+    DC: OutputPin,
     DC::Error: Debug,
-    RESET: hal::digital::v2::OutputPin,
+    RESET: OutputPin,
     RESET::Error: Debug,
 {
     type Error = SPI::Error;
 
-    fn reset<D: hal::blocking::delay::DelayMs<u8>>(&mut self, delay: &mut D) {
+    fn reset<D: DelayNs>(&mut self, delay: &mut D) {
         self.reset.set_low().unwrap();
         delay.delay_ms(RESET_DELAY_MS);
         self.reset.set_high().unwrap();
@@ -168,7 +172,7 @@ where
         self.write(data)
     }
 
-    fn busy_wait(&self) {
+    fn busy_wait(&mut self) {
         while match self.busy.is_high() {
             Ok(x) => x,
             _ => false,
