@@ -6,6 +6,8 @@ use embedded_hal::{
 };
 use embedded_hal_async::spi::SpiDevice;
 
+use crate::error::Ssd1680Error;
+
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
 const RESET_DELAY_MS: u32 = 10;
 
@@ -23,7 +25,8 @@ pub trait DisplayInterface {
     fn send_data(&mut self, data: &[u8]) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Reset the controller.
-    fn reset<D: DelayNs>(&mut self, delay: &mut D) -> impl Future<Output = ()>;
+    fn reset<D: DelayNs>(&mut self, delay: &mut D)
+        -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Wait for the controller to indicate it is not busy.
     fn busy_wait(&mut self) -> impl Future<Output = ()>;
@@ -121,7 +124,7 @@ where
         }
     }
 
-    async fn write(&mut self, data: &[u8]) -> Result<(), SpiDeviceError<BUS, CS>> {
+    async fn write(&mut self, data: &[u8]) -> Result<(), Ssd1680Error<BUS, CS, DC, RESET>> {
         // Linux has a default limit of 4096 bytes per SPI transfer
         // https://github.com/torvalds/linux/blob/ccda4af0f4b92f7b4c308d3acc262f4a7e3affad/drivers/spi/spidev.c#L93
         if cfg!(target_os = "linux") {
@@ -145,28 +148,35 @@ where
     BUSY: InputPin,
     DC: OutputPin,
     DC::Error: Debug,
+    Ssd1680Error<BUS, CS, DC, RESET>:
+        core::convert::From<<DC as embedded_hal::digital::ErrorType>::Error>,
     RESET: OutputPin,
     RESET::Error: Debug,
+    Ssd1680Error<BUS, CS, DC, RESET>:
+        core::convert::From<<RESET as embedded_hal::digital::ErrorType>::Error>,
 {
-    type Error = SpiDev::Error;
+    type Error = Ssd1680Error<BUS, CS, DC, RESET>;
 
-    async fn reset<D: DelayNs>(&mut self, delay: &mut D) {
-        self.reset.set_low().unwrap();
+    async fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), Self::Error> {
+        if let Err(e) = self.reset.set_low() {
+            return Err(Ssd1680Error::ResetPinError(e));
+        }
         delay.delay_ms(RESET_DELAY_MS);
-        self.reset.set_high().unwrap();
+        self.reset.set_high()?;
         delay.delay_ms(RESET_DELAY_MS);
+        Ok(())
     }
 
-    async fn send_command(&mut self, command: u8) -> Result<(), SpiDeviceError<BUS, CS>> {
-        self.dc.set_low().unwrap();
+    async fn send_command(&mut self, command: u8) -> Result<(), Self::Error> {
+        self.dc.set_low()?;
         self.write(&[command]).await?;
-        self.dc.set_high().unwrap();
+        self.dc.set_high()?;
 
         Ok(())
     }
 
-    async fn send_data(&mut self, data: &[u8]) -> Result<(), SpiDeviceError<BUS, CS>> {
-        self.dc.set_high().unwrap();
+    async fn send_data(&mut self, data: &[u8]) -> Result<(), Self::Error> {
+        self.dc.set_high()?;
         self.write(data).await
     }
 

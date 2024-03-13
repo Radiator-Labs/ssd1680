@@ -80,7 +80,7 @@ where
     }
 
     async fn chip_reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.interface.reset(delay).await;
+        self.interface.reset(delay).await?;
         self.interface.busy_wait().await;
         Command::SoftReset.execute(&mut self.interface).await
     }
