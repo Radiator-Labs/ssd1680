@@ -20,7 +20,6 @@ where
 {
     display: Display<'a, I>,
     black_buffer: B,
-    red_buffer: B,
 }
 
 impl<'a, I, B> GraphicDisplay<'a, I, B>
@@ -30,38 +29,29 @@ where
 {
     /// Promote a `Display` to a `GraphicDisplay`.
     ///
-    /// B/W and Red buffers for drawing into must be supplied. These should be `rows` * `cols` in
+    /// B/W buffer for drawing into must be supplied. These should be `rows` * `cols` in
     /// length.
-    pub fn new(display: Display<'a, I>, black_buffer: B, red_buffer: B) -> Self {
+    pub fn new(display: Display<'a, I>, black_buffer: B) -> Self {
         GraphicDisplay {
             display,
             black_buffer,
-            red_buffer,
         }
     }
 
     /// Update the display by writing the buffers to the controller.
     pub async fn update<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.display
-            .update(self.black_buffer.as_mut(), self.red_buffer.as_mut(), delay)
-            .await
+        self.display.update(self.black_buffer.as_mut(), delay).await
     }
 
     /// Clear the buffers, filling them a single color.
     pub fn clear(&mut self, color: Color) {
-        let (black, red) = match color {
-            Color::White => (0xFF, 0x00),
-            Color::Black => (0x00, 0x00),
-            Color::Red => (0xFF, 0xFF),
+        let black = match color {
+            Color::White => 0xFF,
+            Color::Black => 0x00,
         };
 
         for byte in &mut self.black_buffer.as_mut().iter_mut() {
             *byte = black; // background_color.get_byte_value();
-        }
-
-        // TODO: Combine loops
-        for byte in &mut self.red_buffer.as_mut().iter_mut() {
-            *byte = red; // background_color.get_byte_value();
         }
     }
 
@@ -78,15 +68,9 @@ where
         match color {
             Color::Black => {
                 self.black_buffer.as_mut()[index] &= !bit;
-                self.red_buffer.as_mut()[index] &= !bit;
             }
             Color::White => {
                 self.black_buffer.as_mut()[index] |= bit;
-                self.red_buffer.as_mut()[index] &= !bit;
-            }
-            Color::Red => {
-                self.black_buffer.as_mut()[index] |= bit;
-                self.red_buffer.as_mut()[index] |= bit;
             }
         }
     }
@@ -231,56 +215,33 @@ mod tests {
     #[test]
     fn clear_white() {
         let mut black_buffer = [0u8; BUFFER_SIZE];
-        let mut red_buffer = [0u8; BUFFER_SIZE];
 
         {
-            let mut display =
-                GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut red_buffer);
+            let mut display = GraphicDisplay::new(build_mock_display(), &mut black_buffer);
             display.clear(Color::White);
         }
 
         assert_eq!(black_buffer, [0xFF, 0xFF, 0xFF]);
-        assert_eq!(red_buffer, [0x00, 0x00, 0x00]);
     }
 
     #[test]
     fn clear_black() {
         let mut black_buffer = [0u8; BUFFER_SIZE];
-        let mut red_buffer = [0u8; BUFFER_SIZE];
 
         {
-            let mut display =
-                GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut red_buffer);
+            let mut display = GraphicDisplay::new(build_mock_display(), &mut black_buffer);
             display.clear(Color::Black);
         }
 
         assert_eq!(black_buffer, [0x00, 0x00, 0x00]);
-        assert_eq!(red_buffer, [0x00, 0x00, 0x00]);
-    }
-
-    #[test]
-    fn clear_red() {
-        let mut black_buffer = [0u8; BUFFER_SIZE];
-        let mut red_buffer = [0u8; BUFFER_SIZE];
-
-        {
-            let mut display =
-                GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut red_buffer);
-            display.clear(Color::Red);
-        }
-
-        assert_eq!(black_buffer, [0xFF, 0xFF, 0xFF]);
-        assert_eq!(red_buffer, [0xFF, 0xFF, 0xFF]);
     }
 
     #[test]
     fn draw_rect_white() {
         let mut black_buffer = [0u8; BUFFER_SIZE];
-        let mut red_buffer = [0u8; BUFFER_SIZE];
 
         {
-            let mut display =
-                GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut red_buffer);
+            let mut display = GraphicDisplay::new(build_mock_display(), &mut black_buffer);
 
             Rectangle::with_corners(Point::new(0, 0), Point::new(2, 2))
                 .into_styled(
@@ -295,42 +256,6 @@ mod tests {
 
         #[rustfmt::skip]
         assert_eq!(black_buffer, [0b11100000,
-                                  0b10100000,
-                                  0b11100000]);
-
-        #[rustfmt::skip]
-        assert_eq!(red_buffer,   [0b00000000,
-                                  0b00000000,
-                                  0b00000000]);
-    }
-
-    #[test]
-    fn draw_rect_red() {
-        let mut black_buffer = [0u8; BUFFER_SIZE];
-        let mut red_buffer = [0u8; BUFFER_SIZE];
-
-        {
-            let mut display =
-                GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut red_buffer);
-
-            Rectangle::with_corners(Point::new(0, 0), Point::new(2, 2))
-                .into_styled(
-                    PrimitiveStyleBuilder::new()
-                        .stroke_color(Color::Red)
-                        .stroke_width(1)
-                        .build(),
-                )
-                .draw(&mut display)
-                .unwrap();
-        }
-
-        #[rustfmt::skip]
-        assert_eq!(black_buffer, [0b11100000,
-                                  0b10100000,
-                                  0b11100000]);
-
-        #[rustfmt::skip]
-        assert_eq!(red_buffer,   [0b11100000,
                                   0b10100000,
                                   0b11100000]);
     }

@@ -18,7 +18,8 @@
 //!
 //! Optionally the [Display] can be promoted to a [GraphicDisplay], which allows it to use the
 //! functionality from the [embedded-graphics crate][embedded-graphics]. The plain display only
-//! provides the ability to update the display by passing black/white and red buffers.
+//! provides the ability to update the display by passing black/white buffers.
+//! (There is no support for the red buffer.)
 //!
 //! To update the display you will typically follow this flow:
 //!

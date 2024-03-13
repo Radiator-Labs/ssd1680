@@ -160,15 +160,14 @@ where
 
     /// Update the display by writing the supplied B/W and Red buffers to the controller.
     ///
-    /// This method will write the two buffers to the controller then initiate the update
+    /// This method will write the black buffer (only) to the controller then initiate the update
     /// display command. Currently it will busy wait until the update has completed.
     pub async fn update<D: DelayNs>(
         &mut self,
         black: &[u8],
-        red: &[u8],
         delay: &mut D,
     ) -> Result<(), I::Error> {
-        self.update_impl(black, red, delay).await?;
+        self.update_impl(black, delay).await?;
 
         // Kick off the display update
         Command::UpdateDisplayOption2(DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator).execute(&mut self.interface).await?; // was 0xC7, should be 0xCF
@@ -180,7 +179,6 @@ where
     async fn update_impl<D: DelayNs>(
         &mut self,
         black: &[u8],
-        red: &[u8],
         _delay: &mut D,
     ) -> Result<(), I::Error> {
         self.interface.busy_wait().await;
@@ -194,15 +192,6 @@ where
             .execute(&mut self.interface)
             .await?;
         BufCommand::WriteBlackData(&black[..buf_limit])
-            .execute(&mut self.interface)
-            .await?;
-
-        // Write the Red RAM
-        Command::XAddress(0).execute(&mut self.interface).await?;
-        Command::YAddress(self.config.dimensions.rows - 1)
-            .execute(&mut self.interface)
-            .await?;
-        BufCommand::WriteRedData(&red[..buf_limit])
             .execute(&mut self.interface)
             .await?;
 
