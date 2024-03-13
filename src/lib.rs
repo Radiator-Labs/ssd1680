@@ -39,7 +39,6 @@ mod color;
 pub mod command;
 pub mod config;
 pub mod display;
-pub mod error;
 pub mod graphics;
 pub mod interface;
 

@@ -453,10 +453,9 @@ mod tests {
         }
 
         /// Reset the controller.
-        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) -> Result<(), Self::Error> {
+        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) {
             self.data = [0; 256];
             self.offset = 0;
-            Ok(())
         }
 
         /// Wait for the controller to indicate it is not busy.

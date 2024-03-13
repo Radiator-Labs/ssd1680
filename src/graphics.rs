@@ -182,9 +182,7 @@ mod tests {
     impl DisplayInterface for MockInterface {
         type Error = MockError;
 
-        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) -> Result<(), Self::Error> {
-            Ok(())
-        }
+        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) {}
 
         async fn send_command(&mut self, _command: u8) -> Result<(), Self::Error> {
             Ok(())
