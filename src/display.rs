@@ -103,7 +103,7 @@ where
             .execute(&mut self.interface)
             .await?;
 
-        let end = self.config.dimensions.cols / 8 - 1;
+        let end = self.cols_as_bytes() - 1;
         Command::StartEndXPosition(0, end)
             .execute(&mut self.interface)
             .await?;
@@ -198,6 +198,52 @@ where
         Ok(())
     }
 
+    pub async fn partial_update<D: DelayNs>(
+        &mut self,
+        image: &[u8],
+        delay: &mut D,
+        start_x_px: u16,
+        start_y_px: u16,
+        width_px: u16,
+        height_px: u16,
+    ) -> Result<(), I::Error> {
+        // Add hardware reset to prevent background color change
+        self.interface.reset(delay).await;
+
+        // Lock the border to prevent flashing
+        Command::BorderWaveform(0x80)
+            .execute(&mut self.interface)
+            .await?;
+
+        let start_x_byte = (start_x_px / 8) as u8;
+        let width_byte = (width_px / 8) as u8;
+        let end_x_byte = start_x_byte + width_byte - 1;
+        Command::StartEndXPosition(start_x_byte, end_x_byte)
+            .execute(&mut self.interface)
+            .await?;
+        let end_y_px = start_y_px + height_px - 1;
+        Command::StartEndYPosition(start_y_px, end_y_px)
+            .execute(&mut self.interface)
+            .await?;
+
+        Command::XAddress(start_x_byte)
+            .execute(&mut self.interface)
+            .await?;
+        Command::YAddress(start_y_px)
+            .execute(&mut self.interface)
+            .await?;
+
+        BufCommand::WriteBlackData(image)
+            .execute(&mut self.interface)
+            .await?;
+
+        // Kick off the display update
+        Command::UpdateDisplayOption2(DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode2_DisableAnalog_DisableOscillator).execute(&mut self.interface).await?;
+        Command::UpdateDisplay.execute(&mut self.interface).await?;
+
+        Ok(())
+    }
+
     /// Enter deep sleep mode.
     ///
     /// This puts the display controller into a low power mode. `reset` must be called to wake it
@@ -217,6 +263,10 @@ where
     /// Returns the number of columns the display has.
     pub fn cols(&self) -> u8 {
         self.config.dimensions.cols
+    }
+
+    pub fn cols_as_bytes(&self) -> u8 {
+        self.config.dimensions.cols / 8
     }
 
     /// Returns the rotation the display was configured with.
