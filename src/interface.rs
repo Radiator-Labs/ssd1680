@@ -1,5 +1,6 @@
 use core::{fmt::Debug, future::Future};
 use embassy_embedded_hal::shared_bus::SpiDeviceError;
+use embassy_time::{with_timeout, Duration};
 use embedded_hal::{
     delay::DelayNs,
     digital::{InputPin, OutputPin},
@@ -26,7 +27,10 @@ pub trait DisplayInterface {
     fn reset<D: DelayNs>(&mut self, delay: &mut D) -> impl Future<Output = ()>;
 
     /// Wait for the controller to indicate it is not busy.
-    fn busy_wait(&mut self) -> impl Future<Output = ()>;
+    fn busy_wait<D: DelayNs>(
+        &mut self,
+        delay: &mut D,
+    ) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 /// The hardware interface to a display.
@@ -134,6 +138,18 @@ where
 
         Ok(())
     }
+
+    async fn busy_wait_impl<D: DelayNs>(&mut self, delay: &mut D) {
+        while match self.busy.is_high() {
+            Ok(x) => {
+                if x {
+                    delay.delay_ms(RESET_DELAY_MS);
+                }
+                x
+            }
+            _ => false,
+        } {}
+    }
 }
 
 impl<SpiDev, BUS, CS, BUSY, DC, RESET> DisplayInterface
@@ -170,10 +186,14 @@ where
         self.write(data).await
     }
 
-    async fn busy_wait(&mut self) {
-        while match self.busy.is_high() {
-            Ok(x) => x,
-            _ => false,
-        } {}
+    async fn busy_wait<D: DelayNs>(
+        &mut self,
+        delay: &mut D,
+    ) -> Result<(), SpiDeviceError<BUS, CS>> {
+        if (with_timeout(Duration::from_secs(2), self.busy_wait_impl(delay)).await).is_err() {
+            Err(SpiDeviceError::Config)
+        } else {
+            Ok(())
+        }
     }
 }

@@ -75,21 +75,21 @@ where
     /// This will wake a controller that has previously entered deep sleep.
     pub async fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.chip_reset(delay).await?;
-        self.init_for_fast().await?;
-        self.init().await
+        self.init_for_fast(delay).await?;
+        self.init(delay).await
     }
 
     async fn chip_reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         self.interface.reset(delay).await;
-        self.interface.busy_wait().await;
+        self.interface.busy_wait(delay).await?;
         Command::SoftReset.execute(&mut self.interface).await
     }
 
     /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
-    async fn init(&mut self) -> Result<(), I::Error> {
+    async fn init<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         // Matches Section 9: Typical Operating Sequence from the data sheet
-        self.interface.busy_wait().await;
+        self.interface.busy_wait(delay).await?;
         Command::DriverOutputControl(self.config.dimensions.rows - 1, 0x00)
             .execute(&mut self.interface)
             .await?;
@@ -130,7 +130,7 @@ where
         Ok(())
     }
 
-    async fn init_for_fast(&mut self) -> Result<(), I::Error> {
+    async fn init_for_fast<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
         // Matches code example from GoodDisplay
         Command::TemperatureSensorSelection(TemperatureSensor::Internal)
             .execute(&mut self.interface)
@@ -141,7 +141,7 @@ where
         .execute(&mut self.interface)
         .await?;
         Command::UpdateDisplay.execute(&mut self.interface).await?;
-        self.interface.busy_wait().await;
+        self.interface.busy_wait(delay).await?;
 
         Command::WriteTemperatureSensor(0x6400)
             .execute(&mut self.interface)
@@ -153,7 +153,7 @@ where
         .execute(&mut self.interface)
         .await?;
         Command::UpdateDisplay.execute(&mut self.interface).await?;
-        self.interface.busy_wait().await;
+        self.interface.busy_wait(delay).await?;
 
         Ok(())
     }
@@ -179,9 +179,9 @@ where
     async fn update_impl<D: DelayNs>(
         &mut self,
         black: &[u8],
-        _delay: &mut D,
+        delay: &mut D,
     ) -> Result<(), I::Error> {
-        self.interface.busy_wait().await;
+        self.interface.busy_wait(delay).await?;
         // Write the B/W RAM
         let buf_size = self.rows() as usize * self.cols() as usize;
         let limit_adder = if buf_size % 8 != 0 { 1 } else { 0 };
@@ -248,8 +248,8 @@ where
     ///
     /// This puts the display controller into a low power mode. `reset` must be called to wake it
     /// from sleep.
-    pub async fn deep_sleep(&mut self) -> Result<(), I::Error> {
-        self.interface.busy_wait().await;
+    pub async fn deep_sleep<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
+        self.interface.busy_wait(delay).await?;
         Command::DeepSleepMode(DeepSleepMode::PreserveRAM)
             .execute(&mut self.interface)
             .await

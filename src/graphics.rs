@@ -248,7 +248,9 @@ mod tests {
             Ok(())
         }
 
-        async fn busy_wait(&mut self) {}
+        async fn busy_wait<D: DelayNs>(&mut self, _delay: &mut D) -> Result<(), Self::Error> {
+            Ok(())
+        }
     }
 
     fn build_mock_display<'a>() -> Display<'a, MockInterface> {

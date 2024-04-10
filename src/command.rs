@@ -459,8 +459,9 @@ mod tests {
         }
 
         /// Wait for the controller to indicate it is not busy.
-        async fn busy_wait(&mut self) {
+        async fn busy_wait<D: DelayNs>(&mut self, _delay: &mut D) -> Result<(), Self::Error> {
             // nop
+            Ok(())
         }
     }
 
