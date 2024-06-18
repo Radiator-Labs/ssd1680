@@ -1,6 +1,5 @@
 use core::{fmt::Debug, future::Future};
 use embassy_embedded_hal::shared_bus::SpiDeviceError;
-use embassy_time::{with_timeout, Duration};
 use embedded_hal::{
     delay::DelayNs,
     digital::{InputPin, OutputPin},
@@ -9,6 +8,8 @@ use embedded_hal_async::spi::SpiDevice;
 
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
 const RESET_DELAY_MS: u32 = 10;
+const TIMEOUT_MS: u32 = 1_000;
+const NUM_RESET_DELAYS_IS_TIMEOUT: u32 = TIMEOUT_MS / RESET_DELAY_MS;
 
 /// Trait implemented by displays to provide implementation of core functionality.
 pub trait DisplayInterface {
@@ -139,7 +140,8 @@ where
         Ok(())
     }
 
-    async fn busy_wait_impl<D: DelayNs>(&mut self, delay: &mut D) {
+    async fn busy_wait_with_timeout<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), ()> {
+        let mut count = 0;
         while match self.busy.is_high() {
             Ok(x) => {
                 if x {
@@ -147,8 +149,14 @@ where
                 }
                 x
             }
-            _ => false,
-        } {}
+            _ => return Err(()),
+        } {
+            if count > NUM_RESET_DELAYS_IS_TIMEOUT {
+                return Err(());
+            }
+            count += 1;
+        }
+        Ok(())
     }
 }
 
@@ -190,7 +198,7 @@ where
         &mut self,
         delay: &mut D,
     ) -> Result<(), SpiDeviceError<BUS, CS>> {
-        if (with_timeout(Duration::from_secs(2), self.busy_wait_impl(delay)).await).is_err() {
+        if self.busy_wait_with_timeout(delay).await.is_err() {
             Err(SpiDeviceError::Config)
         } else {
             Ok(())
