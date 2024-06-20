@@ -6,7 +6,6 @@ use crate::{
     config::Config,
     interface::DisplayInterface,
 };
-use embedded_hal::delay::DelayNs;
 
 // Max display resolution is 176x296 // was 160x296
 /// The maximum number of rows supported by the controller
@@ -73,23 +72,23 @@ where
     /// Perform a hardware reset followed by software reset.
     ///
     /// This will wake a controller that has previously entered deep sleep.
-    pub async fn reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.chip_reset(delay).await?;
-        self.init_for_fast(delay).await?;
-        self.init(delay).await
+    pub async fn reset(&mut self) -> Result<(), I::Error> {
+        self.chip_reset().await?;
+        self.init_for_fast().await?;
+        self.init().await
     }
 
-    async fn chip_reset<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.interface.reset(delay).await;
-        self.interface.busy_wait(delay).await?;
+    async fn chip_reset(&mut self) -> Result<(), I::Error> {
+        self.interface.reset().await;
+        self.interface.busy_wait().await?;
         Command::SoftReset.execute(&mut self.interface).await
     }
 
     /// Initialize the controller according to Section 9: Typical Operating Sequence
     /// from the data sheet
-    async fn init<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
+    async fn init(&mut self) -> Result<(), I::Error> {
         // Matches Section 9: Typical Operating Sequence from the data sheet
-        self.interface.busy_wait(delay).await?;
+        self.interface.busy_wait().await?;
         Command::DriverOutputControl(self.config.dimensions.rows - 1, 0x00)
             .execute(&mut self.interface)
             .await?;
@@ -130,7 +129,7 @@ where
         Ok(())
     }
 
-    async fn init_for_fast<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
+    async fn init_for_fast(&mut self) -> Result<(), I::Error> {
         // Matches code example from GoodDisplay
         Command::TemperatureSensorSelection(TemperatureSensor::Internal)
             .execute(&mut self.interface)
@@ -141,7 +140,7 @@ where
         .execute(&mut self.interface)
         .await?;
         Command::UpdateDisplay.execute(&mut self.interface).await?;
-        self.interface.busy_wait(delay).await?;
+        self.interface.busy_wait().await?;
 
         Command::WriteTemperatureSensor(0x6400)
             .execute(&mut self.interface)
@@ -153,7 +152,7 @@ where
         .execute(&mut self.interface)
         .await?;
         Command::UpdateDisplay.execute(&mut self.interface).await?;
-        self.interface.busy_wait(delay).await?;
+        self.interface.busy_wait().await?;
 
         Ok(())
     }
@@ -162,12 +161,8 @@ where
     ///
     /// This method will write the black buffer (only) to the controller then initiate the update
     /// display command. Currently it will busy wait until the update has completed.
-    pub async fn update<D: DelayNs>(
-        &mut self,
-        black: &[u8],
-        delay: &mut D,
-    ) -> Result<(), I::Error> {
-        self.update_impl(black, delay).await?;
+    pub async fn update(&mut self, black: &[u8]) -> Result<(), I::Error> {
+        self.update_impl(black).await?;
 
         // Kick off the display update
         Command::UpdateDisplayOption2(DisplayUpdateSequenceOption::EnableClockSignal_EnableAnalog_DisplayMode1_DisableAnalog_DisableOscillator).execute(&mut self.interface).await?; // was 0xC7, should be 0xCF
@@ -176,12 +171,8 @@ where
         Ok(())
     }
 
-    async fn update_impl<D: DelayNs>(
-        &mut self,
-        black: &[u8],
-        delay: &mut D,
-    ) -> Result<(), I::Error> {
-        self.interface.busy_wait(delay).await?;
+    async fn update_impl(&mut self, black: &[u8]) -> Result<(), I::Error> {
+        self.interface.busy_wait().await?;
         // Write the B/W RAM
         let buf_size = self.rows() as usize * self.cols() as usize;
         let limit_adder = if buf_size % 8 != 0 { 1 } else { 0 };
@@ -198,17 +189,16 @@ where
         Ok(())
     }
 
-    pub async fn partial_update<D: DelayNs>(
+    pub async fn partial_update(
         &mut self,
         image: &[u8],
-        delay: &mut D,
         start_x_px: u16,
         start_y_px: u16,
         width_px: u16,
         height_px: u16,
     ) -> Result<(), I::Error> {
         // Add hardware reset to prevent background color change
-        self.interface.reset(delay).await;
+        self.interface.reset().await;
 
         // Lock the border to prevent flashing
         Command::BorderWaveform(0x80)
@@ -248,8 +238,8 @@ where
     ///
     /// This puts the display controller into a low power mode. `reset` must be called to wake it
     /// from sleep.
-    pub async fn deep_sleep<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.interface.busy_wait(delay).await?;
+    pub async fn deep_sleep(&mut self) -> Result<(), I::Error> {
+        self.interface.busy_wait().await?;
         Command::DeepSleepMode(DeepSleepMode::PreserveRAM)
             .execute(&mut self.interface)
             .await

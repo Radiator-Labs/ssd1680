@@ -7,7 +7,6 @@ use core::{
     convert::{AsMut, AsRef},
     ops::{Deref, DerefMut},
 };
-use embedded_hal::delay::DelayNs;
 
 /// A display that holds buffers for drawing into and updating the display from.
 ///
@@ -42,14 +41,13 @@ where
     }
 
     /// Update the display by writing the buffers to the controller.
-    pub async fn update<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), I::Error> {
-        self.display.update(self.black_buffer.as_ref(), delay).await
+    pub async fn update(&mut self) -> Result<(), I::Error> {
+        self.display.update(self.black_buffer.as_ref()).await
     }
 
     /// Update the display by writing the buffers to the controller.
-    pub async fn partial_update<D: DelayNs>(
+    pub async fn partial_update(
         &mut self,
-        delay: &mut D,
         start_x_px: u16,
         start_y_px: u16,
         width_px: u16,
@@ -66,9 +64,7 @@ where
             height_px,
         );
         self.display
-            .partial_update(
-                sub_image, delay, start_x_px, start_y_px, width_px, height_px,
-            )
+            .partial_update(sub_image, start_x_px, start_y_px, width_px, height_px)
             .await
     }
 
@@ -238,7 +234,7 @@ mod tests {
     impl DisplayInterface for MockInterface {
         type Error = MockError;
 
-        async fn reset<D: DelayNs>(&mut self, _delay: &mut D) {}
+        async fn reset(&mut self) {}
 
         async fn send_command(&mut self, _command: u8) -> Result<(), Self::Error> {
             Ok(())
@@ -248,7 +244,7 @@ mod tests {
             Ok(())
         }
 
-        async fn busy_wait<D: DelayNs>(&mut self, _delay: &mut D) -> Result<(), Self::Error> {
+        async fn busy_wait(&mut self) -> Result<(), Self::Error> {
             Ok(())
         }
     }

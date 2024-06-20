@@ -1,6 +1,6 @@
 [package]
 name = "ssd1680"
-version = "0.10.2"
+version = "0.11.0"
 edition = "2021"
 authors = [
     "Wesley Moore <wes@wezm.net>",

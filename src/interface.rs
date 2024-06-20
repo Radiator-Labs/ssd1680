@@ -1,15 +1,13 @@
 use core::{fmt::Debug, future::Future};
 use embassy_embedded_hal::shared_bus::SpiDeviceError;
-use embedded_hal::{
-    delay::DelayNs,
-    digital::{InputPin, OutputPin},
-};
+use embassy_time::Timer;
+use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_async::spi::SpiDevice;
 
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
-const RESET_DELAY_MS: u32 = 10;
+const RESET_DELAY_MS: u64 = 10;
 const TIMEOUT_MS: u32 = 5_000;
-const NUM_RESET_DELAYS_IS_TIMEOUT: u32 = TIMEOUT_MS / RESET_DELAY_MS;
+const NUM_RESET_DELAYS_IS_TIMEOUT: u32 = TIMEOUT_MS / (RESET_DELAY_MS as u32);
 
 /// Trait implemented by displays to provide implementation of core functionality.
 pub trait DisplayInterface {
@@ -25,13 +23,10 @@ pub trait DisplayInterface {
     fn send_data(&mut self, data: &[u8]) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Reset the controller.
-    fn reset<D: DelayNs>(&mut self, delay: &mut D) -> impl Future<Output = ()>;
+    fn reset(&mut self) -> impl Future<Output = ()>;
 
     /// Wait for the controller to indicate it is not busy.
-    fn busy_wait<D: DelayNs>(
-        &mut self,
-        delay: &mut D,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn busy_wait(&mut self) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 /// The hardware interface to a display.
@@ -140,12 +135,12 @@ where
         Ok(())
     }
 
-    async fn busy_wait_with_timeout<D: DelayNs>(&mut self, delay: &mut D) -> Result<(), ()> {
+    async fn busy_wait_with_timeout(&mut self) -> Result<(), ()> {
         let mut count = 0;
         while match self.busy.is_high() {
             Ok(x) => {
                 if x {
-                    delay.delay_ms(RESET_DELAY_MS);
+                    Timer::after_millis(RESET_DELAY_MS).await;
                 }
                 x
             }
@@ -174,11 +169,11 @@ where
 {
     type Error = SpiDev::Error;
 
-    async fn reset<D: DelayNs>(&mut self, delay: &mut D) {
+    async fn reset(&mut self) {
         self.reset.set_low().unwrap();
-        delay.delay_ms(RESET_DELAY_MS);
+        Timer::after_millis(RESET_DELAY_MS).await;
         self.reset.set_high().unwrap();
-        delay.delay_ms(RESET_DELAY_MS);
+        Timer::after_millis(RESET_DELAY_MS).await;
     }
 
     async fn send_command(&mut self, command: u8) -> Result<(), SpiDeviceError<BUS, CS>> {
@@ -194,11 +189,8 @@ where
         self.write(data).await
     }
 
-    async fn busy_wait<D: DelayNs>(
-        &mut self,
-        delay: &mut D,
-    ) -> Result<(), SpiDeviceError<BUS, CS>> {
-        if self.busy_wait_with_timeout(delay).await.is_err() {
+    async fn busy_wait(&mut self) -> Result<(), SpiDeviceError<BUS, CS>> {
+        if self.busy_wait_with_timeout().await.is_err() {
             Err(SpiDeviceError::Config)
         } else {
             Ok(())
