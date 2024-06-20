@@ -8,7 +8,7 @@ use embedded_hal_async::spi::SpiDevice;
 
 // Section 15.2 of the HINK-E0213A07 data sheet says to hold for 10ms
 const RESET_DELAY_MS: u32 = 10;
-const TIMEOUT_MS: u32 = 1_000;
+const TIMEOUT_MS: u32 = 5_000;
 const NUM_RESET_DELAYS_IS_TIMEOUT: u32 = TIMEOUT_MS / RESET_DELAY_MS;
 
 /// Trait implemented by displays to provide implementation of core functionality.
