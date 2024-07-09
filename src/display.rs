@@ -74,14 +74,19 @@ where
     /// This will wake a controller that has previously entered deep sleep.
     pub async fn reset(&mut self) -> Result<(), I::Error> {
         self.chip_reset().await?;
+        self.sw_reset().await?;
         self.init_for_fast().await?;
         self.init().await
     }
 
     async fn chip_reset(&mut self) -> Result<(), I::Error> {
         self.interface.reset().await;
-        self.interface.busy_wait().await?;
-        Command::SoftReset.execute(&mut self.interface).await
+        self.interface.busy_wait().await
+    }
+
+    async fn sw_reset(&mut self) -> Result<(), I::Error> {
+        Command::SoftReset.execute(&mut self.interface).await?;
+        self.interface.busy_wait().await
     }
 
     /// Initialize the controller according to Section 9: Typical Operating Sequence
