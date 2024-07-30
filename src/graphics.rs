@@ -1,5 +1,4 @@
 use crate::{
-    color::Color,
     display::{Display, Rotation},
     interface::DisplayInterface,
 };
@@ -7,6 +6,10 @@ use core::{
     convert::{AsMut, AsRef},
     ops::{Deref, DerefMut},
 };
+use embedded_graphics::pixelcolor::BinaryColor;
+
+pub const WHITE: BinaryColor = BinaryColor::On;
+pub const BLACK: BinaryColor = BinaryColor::Off;
 
 /// A display that holds buffers for drawing into and updating the display from.
 ///
@@ -69,10 +72,10 @@ where
     }
 
     /// Clear the buffers, filling them a single color.
-    pub fn clear(&mut self, color: Color) {
+    pub fn clear(&mut self, color: BinaryColor) {
         let black = match color {
-            Color::White => 0xFF,
-            Color::Black => 0x00,
+            BLACK => 0x00,
+            WHITE => 0xFF,
         };
 
         for byte in &mut self.black_buffer.as_mut().iter_mut() {
@@ -80,7 +83,7 @@ where
         }
     }
 
-    fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+    fn set_pixel(&mut self, x: u32, y: u32, color: BinaryColor) {
         let (index, bit) = rotation(
             x,
             y,
@@ -91,10 +94,10 @@ where
         let index = index as usize;
 
         match color {
-            Color::Black => {
+            BLACK => {
                 self.black_buffer.as_mut()[index] &= !bit;
             }
-            Color::White => {
+            WHITE => {
                 self.black_buffer.as_mut()[index] |= bit;
             }
         }
@@ -145,7 +148,7 @@ where
     B: AsMut<[u8]>,
     B: AsRef<[u8]>,
 {
-    type Color = Color;
+    type Color = BinaryColor;
     type Error = core::convert::Infallible;
 
     fn draw_iter<Iter>(&mut self, pixels: Iter) -> Result<(), Self::Error>
@@ -212,7 +215,6 @@ mod tests {
     use self::embedded_graphics::primitives::{PrimitiveStyleBuilder, Rectangle};
     use super::*;
     use crate::{
-        color::Color,
         config::Builder,
         display::{Dimensions, Display, Rotation},
         graphics::GraphicDisplay,
@@ -272,7 +274,7 @@ mod tests {
         {
             let mut display =
                 GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut work_buffer);
-            display.clear(Color::White);
+            display.clear(WHITE);
         }
 
         assert_eq!(black_buffer, [0xFF, 0xFF, 0xFF]);
@@ -287,7 +289,7 @@ mod tests {
         {
             let mut display =
                 GraphicDisplay::new(build_mock_display(), &mut black_buffer, &mut work_buffer);
-            display.clear(Color::Black);
+            display.clear(BLACK);
         }
 
         assert_eq!(black_buffer, [0x00, 0x00, 0x00]);
@@ -306,7 +308,7 @@ mod tests {
             Rectangle::with_corners(Point::new(0, 0), Point::new(2, 2))
                 .into_styled(
                     PrimitiveStyleBuilder::new()
-                        .stroke_color(Color::White)
+                        .stroke_color(WHITE)
                         .stroke_width(1)
                         .build(),
                 )

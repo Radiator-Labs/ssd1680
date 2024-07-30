@@ -35,14 +35,12 @@
 //! [Builder]: config/struct.Builder.html
 //! [embedded-graphics]: https://crates.io/crates/embedded-graphics
 
-mod color;
 pub mod command;
 pub mod config;
 pub mod display;
 pub mod graphics;
 pub mod interface;
 
-pub use color::Color;
 pub use config::Builder;
 pub use display::{Dimensions, Display, Rotation};
 pub use graphics::GraphicDisplay;

@@ -44,7 +44,7 @@ pub trait DisplayInterface {
 /// use linux_embedded_hal::{Pin, Spidev};
 ///
 /// extern crate ssd1680;
-/// use ssd1680::{Builder, Color, Dimensions, Display, GraphicDisplay, Rotation};
+/// use ssd1680::{Builder, Dimensions, Display, GraphicDisplay, Rotation};
 ///
 /// // Configure SPI
 /// let mut spi = Spidev::open("/dev/spidev0.0").expect("SPI device");
