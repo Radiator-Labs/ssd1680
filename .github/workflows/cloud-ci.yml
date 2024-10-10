@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: bazelbuild/setup-bazelisk@v3
-    - name: Cloud-CI SSD1680
+    - name: Cloud-CI_SSD1680
       uses: actions/cache@v4
       with:
         path: "~/.cache/bazel"
