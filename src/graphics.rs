@@ -83,6 +83,7 @@ where
         }
     }
 
+    #[allow(dead_code, reason = "Carried in implementation from previous driver.")]
     fn set_pixel(&mut self, x: u32, y: u32, color: BinaryColor) {
         let (index, bit) = rotation(
             x,
@@ -124,6 +125,7 @@ where
     }
 }
 
+#[allow(dead_code, reason = "Carried in implementation from previous driver.")]
 fn rotation(x: u32, y: u32, width: u32, height: u32, rotation: Rotation) -> (u32, u8) {
     match rotation {
         Rotation::Rotate0 => (x / 8 + (width / 8) * y, 0x80 >> (x % 8)),
