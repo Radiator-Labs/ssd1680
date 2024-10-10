@@ -1,5 +1,5 @@
 load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
-load("@rules_rust//rust:defs.bzl", "rust_clippy", "rust_doc_test", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy", "rust_doc_test", "rust_library", "rust_test", "rustfmt_test")
 
 rust_library(
     name = "ssd1680_no_features",
@@ -51,4 +51,9 @@ rust_clippy(
     name = "clippy",
     testonly = True,
     deps = all_crate_deps(),
+)
+
+rustfmt_test(
+    name = "fmt_test",
+    targets = ["ssd1680"],
 )
