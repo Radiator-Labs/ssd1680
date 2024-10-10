@@ -1,0 +1,13 @@
+{
+    "editor.formatOnSave": true,
+    "rust-analyzer.imports.prefer.no.std": true,
+    "rustTestExplorer.rootCargoManifestFilePath": "${workspaceFolder}/Cargo.toml",
+    "testExplorer.showOnRun": true,
+    "rust-analyzer.inlayHints.typeHints.enable": false,
+    "rust-analyzer.assist.emitMustUse": true,
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.features": null,
+    "rust-analyzer.cargo.features": [],
+    "rust-analyzer.cargo.buildScripts.overrideCommand": null,
+    "rust-analyzer.runnables.command": null
+}
