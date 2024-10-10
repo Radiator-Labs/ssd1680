@@ -1,0 +1,26 @@
+name: Cloud-CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest-m
+
+  steps:
+  - uses: actions/checkout@v4
+  - uses: bazelbuild/setup-bazelisk@v3
+  - name: Cloud-CI SSD1680
+    uses: actions/cache@v4
+    with:
+      path: "~/.cache/bazel"
+      key: bazel
+  - run: |
+      bazel test //...
+      bazel build //...
