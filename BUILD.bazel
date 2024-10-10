@@ -1,0 +1,48 @@
+load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
+
+rust_library(
+    name = "ssd1680_no_features",
+    srcs = glob([
+        "src/**/*.rs",
+    ]),
+    aliases = aliases(),
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+    ),
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(),
+)
+
+rust_library(
+    name = "ssd1680",
+    srcs = glob([
+        "src/**/*.rs",
+    ]),
+    aliases = aliases(),
+    crate_features = ["graphics"],
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+    ),
+    visibility = ["//visibility:public"],
+    deps = all_crate_deps(),
+)
+
+rust_test(
+    name = "tests",
+    timeout = "short",
+    crate = ":ssd1680",
+    crate_features = ["graphics"],
+    proc_macro_deps = all_crate_deps(
+        proc_macro_dev = True,
+    ),
+    deps = all_crate_deps(
+        normal_dev = True,
+    ),
+)
+
+rust_doc_test(
+    name = "doctests",
+    timeout = "short",
+    crate = ":ssd1680",
+)
