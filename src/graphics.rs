@@ -144,7 +144,7 @@ extern crate embedded_graphics;
 use self::embedded_graphics::prelude::*;
 
 #[cfg(feature = "graphics")]
-impl<'a, I, B> DrawTarget for GraphicDisplay<'a, I, B>
+impl<I, B> DrawTarget for GraphicDisplay<'_, I, B>
 where
     I: DisplayInterface,
     B: AsMut<[u8]>,
@@ -170,7 +170,7 @@ where
 }
 
 #[cfg(feature = "graphics")]
-impl<'a, I, B> OriginDimensions for GraphicDisplay<'a, I, B>
+impl<I, B> OriginDimensions for GraphicDisplay<'_, I, B>
 where
     I: DisplayInterface,
 {

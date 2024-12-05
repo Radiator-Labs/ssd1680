@@ -51,7 +51,7 @@ pub struct Config<'a> {
     pub(crate) rotation: Rotation,
 }
 
-impl<'a> Default for Builder<'a> {
+impl Default for Builder<'_> {
     fn default() -> Self {
         Builder {
             dummy_line_period: Command::DummyLinePeriod(0x07),

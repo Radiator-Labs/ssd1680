@@ -84,7 +84,7 @@ pub trait DisplayInterface {
 ///
 /// // Build the interface from the pins and SPI device
 /// let controller = ssd1680::Interface::new(spi, cs, busy, dc, reset);
-
+///
 #[allow(dead_code)] // Prevent warning about CS being unused
 pub struct Interface<SpiDev, BUS, CS, BUSY, DC, RESET>
 where
