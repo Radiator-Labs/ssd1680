@@ -366,7 +366,7 @@ impl Command {
     }
 }
 
-impl<'buf> BufCommand<'buf> {
+impl BufCommand<'_> {
     /// Execute the command, transmitting the associated buffer as well.
     pub async fn execute<I: DisplayInterface>(&self, interface: &mut I) -> Result<(), I::Error> {
         use self::BufCommand::*;
